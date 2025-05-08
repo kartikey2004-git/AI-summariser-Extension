@@ -1,139 +1,122 @@
-document.getElementById("summarize").addEventListener("click", () => {
-  const result = document.getElementById("result");
+document.getElementById("summarize").addEventListener("click", async () => {
+  const resultDiv = document.getElementById("result");
+  resultDiv.innerHTML = '<div class="loading"><div class="loader"></div></div>';
 
   const summaryType = document.getElementById("summary-type").value;
 
-  result.innerHTML = '<div class="loader"></div>';
-
-  // Get the user's API Key first
-
-  chrome.storage.sync.get(
-    ["geminiApiKey"],
-
-    ({ geminiApiKey }) => {
-      if (!geminiApiKey) {
-        result.textContent = "No API key set. Click the gear icon to add one";
-        return;
-      }
-
-      // Now query active tab and Ask content.js for page text
-
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        const tab = tabs[0];
-
-        if (!tab.url.startsWith("http")) {
-          result.textContent = "Cannot summarize this page.";
-          return;
-        }
-
-        chrome.scripting.executeScript(
-          {
-            target: { tabId: tab.id },
-            files: ["content.js"],
-          },
-
-          () => {
-            chrome.tabs.sendMessage(
-              tab.id,
-              { type: "GET_ARTICLE_TEXT" },
-
-              async ({ text } = {}) => {
-                if (chrome.runtime.lastError) {
-                  result.textContent =
-                    "Error: " + chrome.runtime.lastError.message;
-
-                  console.error(chrome.runtime.lastError.message);
-
-                  return;
-                }
-
-                if (text === undefined) {
-                  result.textContent = "No response received.";
-
-                  console.error("No response from content script.");
-
-                  return;
-                }
-
-                // Send text to gemini for processing and return it
-
-                try {
-                  const summary = await getGeminiSummary(
-                    text,
-                    summaryType,
-                    geminiApiKey
-                  );
-
-                  result.textContent = summary;
-                } catch (error) {
-                  result.textContent = "Gemini error: " + error.message;
-                }
-              }
-            );
-          }
-        );
-      });
+  // Get API key from storage
+  chrome.storage.sync.get(["geminiApiKey"], async (result) => {
+    if (!result.geminiApiKey) {
+      resultDiv.innerHTML =
+        "API key not found. Please set your API key in the extension options.";
+      return;
     }
-  );
+
+    chrome.tabs.query({ active: true, currentWindow: true }, ([tab]) => {
+      chrome.tabs.sendMessage(
+        tab.id,
+        { type: "GET_ARTICLE_TEXT" },
+        async (res) => {
+          if (!res || !res.text) {
+            resultDiv.innerText =
+              "Could not extract article text from this page.";
+            return;
+          }
+
+          try {
+            const summary = await getGeminiSummary(
+              res.text,
+              summaryType,
+              result.geminiApiKey
+            );
+            resultDiv.innerText = summary;
+          } catch (error) {
+            resultDiv.innerText = `Error: ${
+              error.message || "Failed to generate summary."
+            }`;
+          }
+        }
+      );
+    });
+  });
 });
 
-async function getGeminiSummary(rawText, type, apiKey) {
-  const max = 20000;
-  const text = rawText.length > max ? rawText.slice(0, max) + "..." : rawText;
+document.getElementById("copy-btn").addEventListener("click", () => {
+  const summaryText = document.getElementById("result").innerText;
 
-  const promptMap = { 
-    brief: `Summarize the following content briefly in 4-5 sentences:\n\n${text}`,
+  if (summaryText && summaryText.trim() !== "") {
+    navigator.clipboard
+      .writeText(summaryText)
+      .then(() => {
+        const copyBtn = document.getElementById("copy-btn");
+        const originalText = copyBtn.innerText;
 
-    detailed: `Provide a detailed summary covering all key points from the following content in 500-1000 words :\n\n${text}`,
-    
-    bullets: `Summarize the following content in 5-7 bullet points and Start each point with " - ":\n\n${text}`,
-  };
-  
+        copyBtn.innerText = "Copied!";
+        setTimeout(() => {
+          copyBtn.innerText = originalText;
+        }, 2000);
+      })
+      .catch((err) => {
+        console.error("Failed to copy text: ", err);
+      });
+  }
+});
 
-  const prompt = promptMap[type] || promptMap.brief;
+async function getGeminiSummary(text, summaryType, apiKey) {
+  // Truncate very long texts to avoid API limits (typically around 30K tokens)
+  const maxLength = 20000;
+  const truncatedText =
+    text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
 
-  const res = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { temperature: 0.2 },
-      }),
-    }
-  );
-
-  if(!res.ok){
-    const { error } = await res.json()
-
-    throw new Error(error?.message || "Request Failed")
+  let prompt;
+  switch (summaryType) {
+    case "brief":
+      prompt = `Provide a brief summary of the following article in 2-3 sentences:\n\n${truncatedText}`;
+      break;
+    case "detailed":
+      prompt = `Provide a detailed summary of the following article, covering all main points and key details:\n\n${truncatedText}`;
+      break;
+    case "bullets":
+      prompt = `Summarize the following article in 5-7 key points. Format each point as a line starting with "- " (dash followed by a space). Do not use asterisks or other bullet symbols, only use the dash. Keep each point concise and focused on a single key insight from the article:\n\n${truncatedText}`;
+      break;
+    default:
+      prompt = `Summarize the following article:\n\n${truncatedText}`;
   }
 
-  const data = await res.json()
+  try {
+    const res = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: prompt }],
+            },
+          ],
+          generationConfig: {
+            temperature: 0.2,
+          },
+        }),
+      }
+    );
 
-  return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "No summary."
+    if (!res.ok) {
+      const errorData = await res.json();
+      throw new Error(errorData.error?.message || "API request failed");
+    }
+
+    const data = await res.json();
+    return (
+      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "No summary available."
+    );
+  } catch (error) {
+    console.error("Error calling Gemini API:", error);
+    throw new Error("Failed to generate summary. Please try again later.");
+  }
 }
-
-document.getElementById('copy-btn').addEventListener('click',() => {
-
-  const txt = document.getElementById("result").innerText;
-
-  if (!txt) return;
-
-  // navigator API from javascript browser 
-
-  navigator.clipboard.writeText(txt).then(() => {
-    const btn = document.getElementById("copy-btn")
-
-    const old = btn.textContent;
-    btn.textContent = "Copied!";
-
-    setTimeout(() => (btn.textContent = old),2000)
-  })
-})
-
 
 /* 
 
