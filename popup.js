@@ -82,11 +82,11 @@ async function getGeminiSummary(rawText, type, apiKey) {
   const text = rawText.length > max ? rawText.slice(0, max) + "..." : rawText;
 
   const promptMap = { 
-    brief: `Summarize the following content briefly in 2-3 sentences:\n\n${text}`,
+    brief: `Summarize the following content briefly in 4-5 sentences:\n\n${text}`,
 
-    detailed: `Provide a detailed summary covering all key points from the following content:\n\n${text}`,
+    detailed: `Provide a detailed summary covering all key points from the following content in 500-1000 words :\n\n${text}`,
     
-    bullets: `Summarize the following content in 5-7 bullet points. Start each point with " - ":\n\n${text}`,
+    bullets: `Summarize the following content in 5-7 bullet points and Start each point with " - ":\n\n${text}`,
   };
   
 
