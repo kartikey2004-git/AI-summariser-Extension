@@ -81,11 +81,14 @@ async function getGeminiSummary(rawText, type, apiKey) {
   const max = 20000;
   const text = rawText.length > max ? rawText.slice(0, max) + "..." : rawText;
 
-  const promptMap = {
-    brief: `Summarize in 2-3 sentences:\n\n ${text}`,
-    detailed: `Give a detailed summary about the :\n\n ${text}`,
-    bullets: `Summarize in 5-7 bullet points ( start each line with " - " ):\n\n ${text}`,
+  const promptMap = { 
+    brief: `Summarize the following content briefly in 2-3 sentences:\n\n${text}`,
+
+    detailed: `Provide a detailed summary covering all key points from the following content:\n\n${text}`,
+    
+    bullets: `Summarize the following content in 5-7 bullet points. Start each point with " - ":\n\n${text}`,
   };
+  
 
   const prompt = promptMap[type] || promptMap.brief;
 
@@ -112,6 +115,24 @@ async function getGeminiSummary(rawText, type, apiKey) {
 
   return data.candidates?.[0]?.content?.parts?.[0]?.text ?? "No summary."
 }
+
+document.getElementById('copy-btn').addEventListener('click',() => {
+
+  const txt = document.getElementById("result").innerText;
+
+  if (!txt) return;
+
+  // navigator API from javascript browser 
+
+  navigator.clipboard.writeText(txt).then(() => {
+    const btn = document.getElementById("copy-btn")
+
+    const old = btn.textContent;
+    btn.textContent = "Copied!";
+
+    setTimeout(() => (btn.textContent = old),2000)
+  })
+})
 
 
 /* 
