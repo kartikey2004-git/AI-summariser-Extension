@@ -1,3 +1,22 @@
+const themeToggle = document.getElementById('theme-toggle');
+const body = document.body;
+
+// Default theme is Light
+body.classList.add('light');
+
+// Listen for changes in checkbox state (slider)
+themeToggle.addEventListener('change', () => {
+  if (themeToggle.checked) {
+    body.classList.remove('light');
+    body.classList.add('dark');
+  } else {
+    body.classList.remove('dark');
+    body.classList.add('light');
+  }
+});
+
+
+
 document.getElementById("summarize").addEventListener("click", async () => {
   const resultDiv = document.getElementById("result");
   resultDiv.innerHTML = '<div class="loading"><div class="loader"></div></div>';
