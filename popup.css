@@ -37,35 +37,42 @@
   transition: 0.4s;
 }
 
-/* When the checkbox is checked (Dark theme) */
+/* When checked */
 
 input:checked + .slider {
-  background-color: #0984e3; /* Blue when checked */
+  background-color: #0984e3;
 }
 
 input:checked + .slider:before {
   transform: translateX(26px);
 }
 
-/* Light and dark theme styles */
-/* Base styles */
+/* ================= BASE ================= */
+
+html, body {
+  height: 100%;
+}
+
 body {
   font-family: Arial, sans-serif;
   min-width: 500px;
   min-height: 300px;
   padding: 15px;
   transition: background-color 0.3s ease, color 0.3s ease;
+
+  display: flex;
+  flex-direction: column;
 }
 
 h2 {
   margin-bottom: 15px;
 }
 
-/* Light Theme */
+/* ================= LIGHT ================= */
+
 body.light {
   background-color: #f0f2f5;
   color: #2c3e50;
-  margin-bottom: 15px;
 }
 
 body.light h2 {
@@ -78,6 +85,26 @@ body.light #result {
   border: 1px solid #dcdde1;
   color: #2c3e50;
 }
+
+/* ================= DARK ================= */
+
+body.dark {
+  background-color: #1e1e2f;
+  color: #f5f6fa;
+}
+
+body.dark h2 {
+  color: #ffffff;
+}
+
+body.dark #summary-type,
+body.dark #result {
+  background-color: #2f3640;
+  border: 1px solid #2f3640;
+  color: #f5f6fa;
+}
+
+/* ================= BUTTON ================= */
 
 button {
   padding: 8px 15px;
@@ -96,22 +123,15 @@ button:hover {
   transform: translateY(-2px);
 }
 
-/* Dark Theme */
-body.dark {
-  background-color: #1e1e2f;
-  color: #f5f6fa;
+#copy-btn {
+  background-color: #34a853;
 }
 
-body.dark h2 {
-  color: #ffffff;
+#copy-btn:hover {
+  background-color: #2e8b57;
 }
 
-body.dark #summary-type,
-body.dark #result {
-  background-color: #2f3640;
-  border: 1px solid #2f3640;
-  color: #f5f6fa;
-}
+/* ================= SELECT ================= */
 
 #summary-type {
   padding: 8px;
@@ -119,19 +139,15 @@ body.dark #result {
   border: 1px solid #ddd;
 }
 
-/* Light Theme */
-body.light #result {
-  background-color: #ffffff; /* White background */
-  border: 1px solid #dcdde1; /* Light border */
-  color: #2c3e50; /* Dark text for light theme */
+/* ================= OPTIONS ================= */
+
+.options {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
 }
 
-/* Dark Theme */
-body.dark #result {
-  background-color: #2f3640; /* Dark background */
-  border: 1px solid #2f3640; /* Matching border with background */
-  color: #f5f6fa; /* Light text for dark theme */
-}
+/* ================= RESULT ================= */
 
 #result {
   margin-top: 15px;
@@ -142,22 +158,20 @@ body.dark #result {
   overflow-y: auto;
   white-space: pre-wrap;
   line-height: 1.5;
+
+  flex: 1;
 }
 
-/* Additional button style for copy button */
-#copy-btn {
-  background-color: #34a853;
+body.light #result {
+  background-color: #ffffff;
+  border: 1px solid #dcdde1;
+  color: #2c3e50;
 }
 
-#copy-btn:hover {
-  background-color: #2e8b57;
-}
-
-/* Flexbox for option buttons */
-.options {
-  display: flex;
-  gap: 10px;
-  margin-bottom: 15px;
+body.dark #result {
+  background-color: #2f3640;
+  border: 1px solid #2f3640;
+  color: #f5f6fa;
 }
 
 #result ul {
@@ -167,6 +181,8 @@ body.dark #result {
 #result li {
   margin-bottom: 10px;
 }
+
+/* ================= LOADER ================= */
 
 .loading {
   display: flex;
@@ -185,10 +201,27 @@ body.dark #result {
 }
 
 @keyframes spin {
-  0% {
-    transform: rotate(0deg);
-  }
-  100% {
-    transform: rotate(360deg);
-  }
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* ================= FOOTER ================= */
+
+.footer {
+  margin-top: 12px;
+  padding-top: 8px;
+  text-align: center;
+  font-size: 11px;
+  letter-spacing: 0.3px;
+  opacity: 0.8;
+}
+
+body.light .footer {
+  color: #636e72;
+  border-top: 1px solid #dfe6e9;
+}
+
+body.dark .footer {
+  color: #b2bec3;
+  border-top: 1px solid rgba(255,255,255,0.08);
 }
